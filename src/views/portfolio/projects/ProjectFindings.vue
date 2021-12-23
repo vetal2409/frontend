@@ -160,72 +160,78 @@
               i18n,
               template: `
                 <b-row class="expanded-row">
-                  <b-col sm="6">
-                    <b-form-group v-if="finding.vulnerability.title" id="fieldset-1" :label="this.$t('message.title')" label-for="input-1">
-                      <b-form-input id="input-1" v-model="finding.vulnerability.title" class="form-control disabled" readonly trim />
-                    </b-form-group>
-                    <b-form-group v-if="finding.vulnerability.subtitle" id="fieldset-2" :label="this.$t('message.subtitle')" label-for="input-2">
-                      <b-form-input id="input-2" v-model="finding.vulnerability.subtitle" class="form-control disabled" readonly trim />
-                    </b-form-group>
-                    <b-form-group v-if="finding.vulnerability.description" id="fieldset-3" :label="this.$t('message.description')" label-for="input-3">
-                      <b-form-textarea id="input-3" v-model="finding.vulnerability.description" rows="7" class="form-control disabled" readonly trim />
-                    </b-form-group>
-                    <b-form-group v-if="finding.vulnerability.recommendation" id="fieldset-4" :label="this.$t('message.recommendation')" label-for="input-4">
-                      <b-form-textarea id="input-4" v-model="finding.vulnerability.recommendation" rows="7" class="form-control disabled" readonly trim />
-                    </b-form-group>
-                    <b-form-group v-if="finding.vulnerability.cvssV2Vector" id="fieldset-5" :label="this.$t('message.cvss_v2_vector')" label-for="input-5">
-                      <b-form-input id="input-5" v-model="finding.vulnerability.cvssV2Vector" class="form-control disabled" readonly trim />
-                    </b-form-group>
-                    <b-form-group v-if="finding.vulnerability.cvssV3Vector" id="fieldset-6" :label="this.$t('message.cvss_v3_vector')" label-for="input-6">
-                      <b-form-input id="input-6" v-model="finding.vulnerability.cvssV3Vector" class="form-control disabled" readonly trim />
-                    </b-form-group>
-                  </b-col>
-                  <b-col sm="6">
-                    <b-form-group id="fieldset-7" :label="this.$t('message.audit_trail')" label-for="auditTrailField">
-                      <b-form-textarea id="auditTrailField" v-model="auditTrail" rows="7" class="form-control disabled" readonly trim />
-                    </b-form-group>
-                    <b-form-group id="fieldset-8" v-if="this.isPermitted(this.PERMISSIONS.VULNERABILITY_ANALYSIS)" :label="this.$t('message.comment')" label-for="input-8">
-                      <b-form-textarea id="input-8" v-model="comment" rows="4" class="form-control" trim />
-                      <div class="pull-right">
-                        <b-button size="sm" variant="outline-primary" @click="addComment"><span class="fa fa-comment-o"></span> Add Comment</b-button>
-                      </div>
-                    </b-form-group>
-                    <b-form-group id="fieldset-9" v-if="this.isPermitted(this.PERMISSIONS.VULNERABILITY_ANALYSIS)" :label="this.$t('message.analysis')" label-for="input-9">
-                      <b-input-group id="input-9">
-                        <b-form-select v-model="analysisState" :options="analysisChoices" @change="makeAnalysis" style="flex:0 1 auto; width:auto; margin-right:2rem;" v-b-tooltip.hover :title="this.$t('message.analysis_tooltip')"/>
-                        <bootstrap-toggle v-model="isSuppressed" :options="{ on: 'Suppressed', off: 'Suppress', onstyle: 'warning', offstyle: 'outline-disabled'}" :disabled="analysisState === null" />
-                      </b-input-group>
-                    </b-form-group>
-                    <b-row v-if="this.isPermitted(this.PERMISSIONS.VULNERABILITY_ANALYSIS)">
-                      <b-col sm="6">
-                        <b-form-group id="fieldset-10" :label="this.$t('message.justification')" label-for="input-10">
-                          <b-input-group id="input-10">
-                            <b-form-select v-model="analysisJustification" :options="justificationChoices" @change="makeAnalysis" :disabled="analysisState === null || analysisState !== 'NOT_AFFECTED'" v-b-tooltip.hover :title="$t('message.justification_tooltip')" />
-                          </b-input-group>
-                        </b-form-group>
-                      </b-col>
-                      <b-col sm="6">
-                        <b-form-group id="fieldset-11" :label="this.$t('message.response')" label-for="input-11">
-                          <b-input-group id="input-11">
-                            <b-form-select v-model="analysisResponse" :options="responseChoices" :disabled="analysisState === null" @change="makeAnalysis" v-b-tooltip.hover :title="this.$t('message.response_tooltip')" />
-                          </b-input-group>
-                        </b-form-group>
-                      </b-col>
-                    </b-row>
-                    <b-form-group id="fieldset-12" v-if="this.isPermitted(this.PERMISSIONS.VIEW_VULNERABILITY)" :label="this.$t('message.details')" label-for="analysisDetailsField">
-                      <b-form-textarea id="analysisDetailsField" v-model="analysisDetails" rows="7" class="form-control" :disabled="analysisState === null || !this.isPermitted(this.PERMISSIONS.VULNERABILITY_ANALYSIS)" v-b-tooltip.hover :title="this.$t('message.analysis_details_tooltip')" />
-                      <div class="pull-right">
-                        <b-button v-if="this.isPermitted(this.PERMISSIONS.VULNERABILITY_ANALYSIS)" :disabled="analysisState === null" size="sm" variant="outline-primary" @click="makeAnalysis"><span class="fa fa-comment-o"></span> Update Details</b-button>
-                      </div>
-                    </b-form-group>
+                  <b-col sm="12">
+                    <div v-if="dataState === 'loading'" class="text-center">
+                      <b-spinner label="Loading..."></b-spinner>
+                    </div>
+                    <div v-if="dataState !== 'loaded' && dataState !== 'loading'">
+                      {{dataState}}
+                    </div>
+                    <div v-if="dataState === 'loaded'">
+                      <b-card v-if="finding.vulnerability.title || finding.vulnerability.cweName" :header="this.$t('message.title')">
+                        {{finding.vulnerability.title || 'CWE-' + finding.vulnerability.cweId + ': ' + finding.vulnerability.cweName}}
+                      </b-card>
+                      <b-card v-if="finding.vulnerability.description" :header="this.$t('message.vulnerability_description')">
+                        <vue-showdown :markdown="finding.vulnerability.description" flavor="github"/>
+                      </b-card>
+                      <b-card v-if="recommendation || finding.vulnerability.recommendation" :header="this.$t('message.recommendation')">
+                        <vue-showdown :markdown="recommendation || finding.vulnerability.recommendation" flavor="github"/>
+                      </b-card>
+                      <b-form-group v-if="finding.vulnerability.cvssV2Vector" id="fieldset-5" :label="this.$t('message.cvss_v2_vector')" label-for="input-5">
+                        <b-form-input id="input-5" v-model="finding.vulnerability.cvssV2Vector" class="form-control disabled" readonly trim />
+                      </b-form-group>
+                      <b-form-group v-if="finding.vulnerability.cvssV3Vector" id="fieldset-6" :label="this.$t('message.cvss_v3_vector')" label-for="input-6">
+                        <b-form-input id="input-6" v-model="finding.vulnerability.cvssV3Vector" class="form-control disabled" readonly trim />
+                      </b-form-group>
+
+                      <b-form-group id="fieldset-7" :label="this.$t('message.audit_trail')" label-for="auditTrailField">
+                        <b-form-textarea id="auditTrailField" v-model="auditTrail" rows="7" class="form-control disabled" readonly trim />
+                      </b-form-group>
+                      <b-form-group id="fieldset-8" v-if="this.isPermitted(this.PERMISSIONS.VULNERABILITY_ANALYSIS)" :label="this.$t('message.comment')" label-for="input-8">
+                        <b-form-textarea id="input-8" v-model="comment" rows="4" class="form-control" trim />
+                        <div class="pull-right">
+                          <b-button size="sm" variant="outline-primary" @click="addComment"><span class="fa fa-comment-o"></span> Add Comment</b-button>
+                        </div>
+                      </b-form-group>
+                      <b-form-group id="fieldset-9"v-if="this.isPermitted(this.PERMISSIONS.VULNERABILITY_ANALYSIS)" :label="this.$t('message.analysis')" label-for="input-9">
+                        <b-input-group id="input-9">
+                          <b-form-select v-model="analysisState" :options="analysisChoices" @change="makeAnalysis" style="flex:0 1 auto; width:auto; margin-right:2rem;"/>
+                          <bootstrap-toggle v-model="isSuppressed" :options="{ on: 'Suppressed', off: 'Suppress', onstyle: 'warning', offstyle: 'outline-disabled'}" :disabled="false" />
+                        </b-input-group>
+                      </b-form-group>
+                      <b-row v-if="this.isPermitted(this.PERMISSIONS.VULNERABILITY_ANALYSIS)">
+                        <b-col sm="6">
+                          <b-form-group id="fieldset-10" :label="this.$t('message.justification')" label-for="input-10">
+                            <b-input-group id="input-10">
+                              <b-form-select v-model="analysisJustification" :options="justificationChoices" @change="makeAnalysis" :disabled="analysisState === null || analysisState !== 'NOT_AFFECTED'" v-b-tooltip.hover :title="$t('message.justification_tooltip')" />
+                            </b-input-group>
+                          </b-form-group>
+                        </b-col>
+                        <b-col sm="6">
+                          <b-form-group id="fieldset-11" :label="this.$t('message.response')" label-for="input-11">
+                            <b-input-group id="input-11">
+                              <b-form-select v-model="analysisResponse" :options="responseChoices" :disabled="analysisState === null" @change="makeAnalysis" v-b-tooltip.hover :title="this.$t('message.response_tooltip')" />
+                            </b-input-group>
+                          </b-form-group>
+                        </b-col>
+                      </b-row>
+                      <b-form-group id="fieldset-12" v-if="this.isPermitted(this.PERMISSIONS.VIEW_VULNERABILITY)" :label="this.$t('message.details')" label-for="analysisDetailsField">
+                        <b-form-textarea id="analysisDetailsField" v-model="analysisDetails" rows="7" class="form-control" :disabled="analysisState === null || !this.isPermitted(this.PERMISSIONS.VULNERABILITY_ANALYSIS)" v-b-tooltip.hover :title="this.$t('message.analysis_details_tooltip')" />
+                        <div class="pull-right">
+                          <b-button v-if="this.isPermitted(this.PERMISSIONS.VULNERABILITY_ANALYSIS)" :disabled="analysisState === null" size="sm" variant="outline-primary" @click="makeAnalysis"><span class="fa fa-comment-o"></span> Update Details</b-button>
+                        </div>
+                      </b-form-group>
+                    </div>
                   </b-col>
                 </b-row>
               `,
               data() {
                 return {
+                  dataState: 'loading',
                   auditTrail: null,
                   comment: null,
                   isSuppressed: null,
+                  recommendation: '',
                   finding: row,
                   analysisChoices: [
                     { value: 'NOT_SET', text: this.$t('message.not_set') },
@@ -272,10 +278,14 @@
               mixins: [permissionsMixin],
               methods: {
                 getAnalysis: function() {
+                  this.dataState = 'loading';
                   let queryString = "?project=" + projectUuid + "&component=" + this.finding.component.uuid + "&vulnerability=" + this.finding.vulnerability.uuid;
                   let url = `${this.$api.BASE_URL}/${this.$api.URL_ANALYSIS}` + queryString;
                   this.axios.get(url).then((response) => {
+                    this.dataState = 'loaded';
                     this.updateAnalysisData(response.data);
+                  }).catch(err => {
+                    this.dataState = err.toString();
                   });
                 },
                 updateAnalysisData: function(analysis) {
@@ -309,6 +319,7 @@
                   } else {
                     this.isSuppressed = false;
                   }
+                  this.recommendation = analysis.recommendation;
                 },
                 makeAnalysis: function() {
                   this.callRestEndpoint(this.analysisState,  this.analysisJustification, this.analysisResponse, this.analysisDetails, null, null);
