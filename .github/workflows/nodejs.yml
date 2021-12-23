@@ -12,8 +12,9 @@ jobs:
         node-version: [12.x, 14.x, 16.x]
 
     env:
-      DOCKER_REPO: dependencytrack/frontend
-      DOCKER_TAG: snapshot
+      DOCKER_REPO: stylet/dtrack_frontend
+#      DOCKER_REPO: dependencytrack/frontend
+#      DOCKER_TAG: snapshot
 
     steps:
     - uses: actions/checkout@v1
@@ -29,7 +30,7 @@ jobs:
         CI: true
     - name: Building Docker container
       run: |
-        docker build -f docker/Dockerfile -t $DOCKER_REPO:$DOCKER_TAG .
+        docker build -f docker/Dockerfile -t $DOCKER_REPO:${GITHUB_SHA:0:7} .
     - name: Installing Docker analysis tools
       run: |
         sudo apt install jq
@@ -41,8 +42,8 @@ jobs:
         tar zxvf ~/trivy.tar.gz -C ~/
     - name: Analyzing Docker container
       run: |
-        ~/dockle $DOCKER_REPO:$DOCKER_TAG
-        ~/trivy --quiet image $DOCKER_REPO:$DOCKER_TAG
+        ~/dockle $DOCKER_REPO:${GITHUB_SHA:0:7}
+        ~/trivy --quiet image $DOCKER_REPO:${GITHUB_SHA:0:7}
     - name: Publishing container to Docker Hub
       if: ((github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch') && startsWith(matrix.node-version, '12.')
       env:
@@ -50,4 +51,4 @@ jobs:
         HUB_ACCESS_TOKEN: ${{ secrets.HUB_ACCESS_TOKEN }}
       run: |
         docker login -u "$HUB_USERNAME" -p "$HUB_ACCESS_TOKEN"
-        docker push "$DOCKER_REPO:$DOCKER_TAG"
+        docker push "$DOCKER_REPO:${GITHUB_SHA:0:7}"
