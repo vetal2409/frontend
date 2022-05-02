@@ -9,10 +9,11 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x]
+        node-version: [16.x]
+#        node-version: [12.x, 14.x, 16.x]
 
     env:
-      DOCKER_REPO: stylet/dtrack_frontend
+      DOCKER_REPO: vetal2409/dtrack_frontend
 #      DOCKER_REPO: dependencytrack/frontend
 #      DOCKER_TAG: snapshot
 
@@ -45,7 +46,7 @@ jobs:
         ~/dockle $DOCKER_REPO:${GITHUB_SHA:0:7}
         ~/trivy --quiet image $DOCKER_REPO:${GITHUB_SHA:0:7}
     - name: Publishing container to Docker Hub
-      if: ((github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch') && startsWith(matrix.node-version, '12.')
+      if: ((github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch') && startsWith(matrix.node-version, '16.')
       env:
         HUB_USERNAME: ${{ secrets.HUB_USERNAME }}
         HUB_ACCESS_TOKEN: ${{ secrets.HUB_ACCESS_TOKEN }}
